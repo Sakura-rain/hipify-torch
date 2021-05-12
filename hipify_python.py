@@ -508,6 +508,45 @@ def replace_extern_shared(input_string):
 
     return output_string
 
+def get_hip_file_path_v1(filepath):
+    """
+    Returns the new name of the hipified file
+    """
+    # At the moment, some files are HIPified in place.  The predicate
+    # is_out_of_place tells us if this is the case or not.
+    if not is_out_of_place(filepath):
+        return filepath
+
+    dirpath, filename = os.path.split(filepath)
+    root, ext = os.path.splitext(filename)
+
+
+    if ext == '.cu':
+        ext = '.hip'
+
+    orig_dirpath = dirpath
+
+    dirpath = dirpath.replace('cuda', 'hip')
+    dirpath = dirpath.replace('THC', 'THH')
+#xuan
+#    root = root.replace('cuda', 'hip')
+#    root = root.replace('CUDA', 'HIP')
+
+    if ext == '.cuh' or ext == '.hpp':
+        root = root
+        print("=======================",filename)
+    else:
+        root = root.replace('cuda', 'hip')
+        root = root.replace('CUDA', 'HIP')
+
+    # Special case to handle caffe2/core/THCCachingAllocator
+    if dirpath != "caffe2/core":
+        root = root.replace('THC', 'THH')
+
+    if dirpath == orig_dirpath:
+        dirpath = os.path.join(dirpath, 'hip')
+
+    return os.path.join(dirpath, root + ext)
 
 def get_hip_file_path(filepath, is_pytorch_extension=False):
     """
@@ -721,7 +760,7 @@ def preprocessor(
 
     orig_output_source = output_source
 
-    fout_path = os.path.abspath(os.path.join(output_directory, get_hip_file_path(filepath, is_pytorch_extension)))
+    fout_path = os.path.abspath(os.path.join(output_directory, get_hip_file_path_v1(filepath, is_pytorch_extension)))
     if not os.path.exists(os.path.dirname(fout_path)):
         clean_ctx.makedirs(os.path.dirname(fout_path))
 
